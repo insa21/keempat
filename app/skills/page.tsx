@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 
 type Skill = {
   id: number;
@@ -25,21 +26,15 @@ export default function SkillsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form };
 
-    if (editId) {
-      await fetch('/api/skills', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editId, ...payload }),
-      });
-    } else {
-      await fetch('/api/skills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    }
+    const method = editId ? 'PUT' : 'POST';
+    const payload = editId ? { id: editId, ...form } : form;
+
+    await fetch('/api/skills', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
     setForm({ name: '', level: '' });
     setEditId(null);
@@ -47,11 +42,14 @@ export default function SkillsPage() {
   }
 
   async function handleDelete(id: number) {
+    if (!confirm('Yakin ingin menghapus skill ini?')) return;
+
     await fetch('/api/skills', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+
     fetchSkills();
   }
 
@@ -61,53 +59,83 @@ export default function SkillsPage() {
   }
 
   return (
-    <main className="p-8 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Skills Manager</h1>
-      <form onSubmit={handleSubmit} className="mb-6 space-y-2">
-        <input
-          className="border p-2 w-full"
-          placeholder="Skill Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <input
-          className="border p-2 w-full"
-          placeholder="Level (e.g., Beginner, Intermediate, Expert)"
-          value={form.level}
-          onChange={(e) => setForm({ ...form, level: e.target.value })}
-        />
-        <button className="bg-green-600 text-white px-4 py-2 rounded" type="submit">
-          {editId ? 'Update Skill' : 'Add Skill'}
-        </button>
-      </form>
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 to-white px-4 py-10">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-extrabold text-center text-indigo-700 mb-10 tracking-tight">
+          💼 Skill Manager
+        </h1>
 
-      <ul className="space-y-2">
-        {skills.map((skill) => (
-          <li
-            key={skill.id}
-            className="flex justify-between items-center border p-2"
-          >
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-12"
+        >
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="font-semibold">{skill.name}</p>
-              <p className="text-sm text-gray-600">{skill.level}</p>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">Skill Name</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g. TypeScript"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
             </div>
-            <div className="space-x-2">
-              <button
-                className="text-yellow-600"
-                onClick={() => handleEdit(skill)}
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">Level</label>
+              <select
+                className="w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.level}
+                onChange={(e) => setForm({ ...form, level: e.target.value })}
+                required
               >
-                Edit
-              </button>
-              <button
-                className="text-red-600"
-                onClick={() => handleDelete(skill.id)}
-              >
-                Delete
-              </button>
+                <option value="">-- Select Level --</option>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+                <option>Expert</option>
+              </select>
             </div>
-          </li>
-        ))}
-      </ul>
+          </div>
+          <button
+            type="submit"
+            className="mt-6 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-md transition"
+          >
+            <PlusCircle size={18} />
+            {editId ? 'Update Skill' : 'Add Skill'}
+          </button>
+        </form>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {skills.map((skill) => (
+            <div
+              key={skill.id}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-lg transition"
+            >
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">{skill.name}</h3>
+                <p className="text-sm text-indigo-500">{skill.level}</p>
+              </div>
+              <div className="mt-4 flex space-x-4">
+                <button
+                  onClick={() => handleEdit(skill)}
+                  className="flex items-center gap-1 text-sm text-amber-600 hover:text-amber-800 font-medium"
+                >
+                  <Pencil size={16} />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(skill.id)}
+                  className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 font-medium"
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }

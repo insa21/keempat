@@ -1,42 +1,55 @@
 // app/api/skills/route.ts
+import { PrismaClient } from '@prisma/client';
+import { NextRequest } from 'next/server';
 
-export type Skill = {
-  id: number;
-  name: string;
-  level: string; // contoh: Beginner, Intermediate, Expert
-};
-
-let skills: Skill[] = [
-  { id: 1, name: 'JavaScript', level: 'Expert' },
-  { id: 2, name: 'Python', level: 'Intermediate' },
-];
+const prisma = new PrismaClient();
 
 export async function GET() {
+  const skills = await prisma.skill.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
   return Response.json(skills);
 }
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const newSkill: Skill = {
-    id: Date.now(),
-    ...body,
-  };
-  skills.push(newSkill);
-  return Response.json(newSkill, { status: 201 });
-}
-
-export async function PUT(request: Request) {
-  const body: Skill = await request.json();
-  const index = skills.findIndex((s) => s.id === body.id);
-  if (index !== -1) {
-    skills[index] = body;
-    return Response.json(skills[index]);
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const newSkill = await prisma.skill.create({
+      data: {
+        name: body.name,
+        level: body.level,
+      },
+    });
+    return Response.json(newSkill, { status: 201 });
+  } catch (err) {
+    return new Response('Invalid JSON or server error', { status: 500 });
   }
-  return Response.json({ error: 'Skill not found' }, { status: 404 });
 }
 
-export async function DELETE(request: Request) {
-  const { id }: { id: number } = await request.json();
-  skills = skills.filter((s) => s.id !== id);
-  return Response.json({ message: 'Deleted' });
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const updated = await prisma.skill.update({
+      where: { id: body.id },
+      data: {
+        name: body.name,
+        level: body.level,
+      },
+    });
+    return Response.json(updated);
+  } catch (err) {
+    return new Response('Invalid PUT request', { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    await prisma.skill.delete({
+      where: { id: body.id },
+    });
+    return Response.json({ message: 'Skill deleted' });
+  } catch (err) {
+    return new Response('Failed to delete', { status: 500 });
+  }
 }
